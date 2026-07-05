@@ -6,10 +6,9 @@ generator client {
 }
 
 datasource db {
-  // Using SQLite for local dev as requested.
-  // To switch to Postgres for production, change provider to "postgresql" and update the URL in .env
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
