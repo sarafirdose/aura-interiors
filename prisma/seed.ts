@@ -1,7 +1,9 @@
 import { PrismaClient } from '@prisma/client'
 import { faker } from '@faker-js/faker'
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient({
+  log: ['warn', 'error'],
+})
 
 const CATEGORIES = [
   'Living Room', 'Bedroom', 'Dining', 'Office', 'Outdoor',
