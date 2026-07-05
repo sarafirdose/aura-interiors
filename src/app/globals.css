@@ -1,26 +1,170 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-luxury-gold: #c5a97d;
+  --color-luxury-dark: #0a0a0a;
+  --color-luxury-glass: rgba(255, 255, 255, 0.05);
+  --color-luxury-border: rgba(255, 255, 255, 0.1);
+  --font-inter: var(--font-inter), sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #ffffff;
+    --bg-secondary: #0c0c0c;
+    --border-primary: rgba(255, 255, 255, 0.1);
+    --glass-bg: rgba(10, 10, 10, 0.5);
+    --glass-border: rgba(255, 255, 255, 0.05);
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --text-muted: rgba(255, 255, 255, 0.5);
+    --btn-bg: #ffffff;
+    --btn-text: #000000;
+  }
+  
+  .day-mode {
+    --background: #faf9f6;
+    --foreground: #151515;
+    --bg-secondary: #f3f2ef;
+    --border-primary: rgba(0, 0, 0, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.75);
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --card-bg: rgba(255, 255, 255, 0.65);
+    --card-border: rgba(0, 0, 0, 0.08);
+    --text-muted: rgba(0, 0, 0, 0.55);
+    --btn-bg: #151515;
+    --btn-text: #ffffff;
+  }
+  
+  html {
+    scroll-behavior: initial;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter);
+    overflow-x: hidden;
+    transition: background-color 1.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.8s ease;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .glass {
+    background: var(--glass-bg) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--glass-border) !important;
+    transition: background 1s ease, border-color 1s ease, color 1s ease;
+  }
+  
+  .glass-card {
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border) !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.04) !important;
+    transition: background 1s ease, border-color 1s ease, box-shadow 1s ease;
+  }
+
+  /* Map tailwind utility borders/backgrounds/texts to theme variables for auto-switching */
+  .border-white\/5, .border-white\/10, .border-white\/20, .border-white\/30 {
+    border-color: var(--border-primary) !important;
+    transition: border-color 1s ease;
+  }
+  .bg-white\/5, .bg-white\/10 {
+    background-color: var(--card-bg) !important;
+    transition: background-color 1s ease;
+  }
+  .bg-\[\#0c0c0c\], .bg-black {
+    background-color: var(--bg-secondary) !important;
+    transition: background-color 1s ease;
+  }
+  .text-white\/40, .text-white\/50, .text-white\/60, .text-white\/70, .text-white\/85 {
+    color: var(--text-muted) !important;
+    transition: color 0.8s ease;
+  }
+  .bg-white.text-black {
+    background-color: var(--btn-bg) !important;
+    color: var(--btn-text) !important;
+    transition: background-color 1s ease, color 1s ease;
+  }
+  .border-white {
+    border-color: var(--btn-bg) !important;
+    transition: border-color 1s ease;
+  }
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translateY(0) translateX(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: var(--max-opacity, 0.8);
+  }
+  100% {
+    transform: translateY(-20vh) translateX(5vw);
+    opacity: 0;
+  }
+}
+
+.particle {
+  animation: floatParticle linear infinite;
+  will-change: transform, opacity;
+}
+
+.film-grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 150;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+.light-rays {
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08) 0%, transparent 50%);
+  transform-origin: center top;
+  animation: rotateRays 15s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 10;
+  mix-blend-mode: screen;
+}
+
+@keyframes rotateRays {
+  0% { transform: rotate(-8deg); }
+  100% { transform: rotate(8deg); }
+}
+
+.glare-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.glare-container::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -150%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0) 100%);
+  transform: skewX(-20deg);
+  transition: all 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.glare-container:hover::after {
+  left: 200%;
 }
