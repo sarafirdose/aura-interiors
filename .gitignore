@@ -44,11 +44,3 @@ next-env.d.ts
 prisma/dev.db
 prisma/dev.db-journal
 
-# Large local media assets (too large for GitHub, host on CDN for production)
-public/frames/
-public/bedroom.mp4
-public/bg-video.mp4
-public/living.mp4
-
-# Local product images (re-run download_furniture.ts to restore)
-public/images/products/
