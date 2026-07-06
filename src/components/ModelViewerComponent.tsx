@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Script from "next/script";
-import { FiMaximize, FiBox } from "react-icons/fi";
+import { FiCamera, FiUpload, FiBox } from "react-icons/fi";
 import { IoClose } from "react-icons/io5";
 
 interface ModelViewerComponentProps {
@@ -15,12 +15,14 @@ interface ModelViewerComponentProps {
 
 export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, isModal = true }: ModelViewerComponentProps) {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [arMode, setArMode] = useState<"3d" | "camera">("3d");
+  const [arMode, setArMode] = useState<"3d" | "camera" | "upload">("3d");
   const [cameraActive, setCameraActive] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const viewerRef = useRef<any>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -32,9 +34,21 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
   const startCamera = async () => {
     try {
       setCameraError(null);
-      const stream = await navigator.mediaDevices.getUserMedia({
+      setUploadedImage(null);
+      
+      // Auto-detect and try environment camera first, then fall back to user camera (webcam)
+      const constraints = {
         video: { facingMode: "environment" }
-      });
+      };
+      
+      let stream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia(constraints);
+      } catch (e) {
+        // Fallback for laptops/desktops without environment camera
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      }
+      
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -43,7 +57,17 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
       setArMode("camera");
     } catch (err: any) {
       console.error("Camera access error:", err);
-      setCameraError("Could not access camera. Please check camera permissions in your browser settings.");
+      setCameraError("Could not access camera. Please check camera permissions in your browser or try uploading an image.");
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      stopCamera(); // Turn off camera stream if it was on
+      const url = URL.createObjectURL(file);
+      setUploadedImage(url);
+      setArMode("upload");
     }
   };
 
@@ -53,6 +77,7 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
       streamRef.current = null;
     }
     setCameraActive(false);
+    setUploadedImage(null);
     setArMode("3d");
   };
 
@@ -62,17 +87,26 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
       <div className="absolute top-6 left-6 z-20 flex flex-col gap-1 max-w-[calc(100%-80px)]">
         <h2 className="text-white text-lg font-light tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">{alt}</h2>
         <p className="text-white/50 text-xs tracking-wider uppercase drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
-          {arMode === "camera" ? "Universal Camera Overlay AR" : "Interactive 3D Preview"}
+          {arMode === "camera" ? "Camera Overlay View" : arMode === "upload" ? "Room Photo Overlay" : "Interactive 3D Preview"}
         </p>
       </div>
 
-      {/* Video stream for Universal Camera Overlay */}
+      {/* Video stream for Webcam / Mobile Camera Overlay */}
       {arMode === "camera" && (
         <video
           ref={videoRef}
           autoPlay
           playsInline
           muted
+          className="absolute inset-0 w-full h-full object-cover z-0"
+        />
+      )}
+
+      {/* Uploaded room photo background */}
+      {arMode === "upload" && uploadedImage && (
+        <img
+          src={uploadedImage}
+          alt="Room Background"
           className="absolute inset-0 w-full h-full object-cover z-0"
         />
       )}
@@ -108,30 +142,47 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
       {/* @ts-ignore */}
       </model-viewer>
 
+      {/* Hidden File Input for room image upload */}
+      <input
+        type="file"
+        accept="image/*"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        className="hidden"
+      />
+
       {/* Bottom control panel */}
       <div className="absolute bottom-8 right-6 z-20 flex flex-col sm:flex-row gap-3 items-end sm:items-center">
         {arMode === "3d" ? (
-          <button
-            onClick={startCamera}
-            className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black px-6 py-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-lg"
-          >
-            <FiBox className="text-base" /> Open Camera View (All Phones)
-          </button>
+          <>
+            <button
+              onClick={startCamera}
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black px-6 py-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-lg"
+            >
+              <FiCamera className="text-base" /> Use Laptop/Phone Camera
+            </button>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white hover:text-black px-6 py-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-lg"
+            >
+              <FiUpload className="text-base" /> Upload Room Photo
+            </button>
+          </>
         ) : (
           <button
             onClick={stopCamera}
             className="bg-white text-black px-6 py-3.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-lg"
           >
-            <IoClose size={16} /> Close Camera View
+            <IoClose size={16} /> Close Overlay
           </button>
         )}
       </div>
 
-      {/* Touch instructions helper overlay */}
-      {arMode === "camera" && (
+      {/* Touch/Mouse instructions helper overlay */}
+      {(arMode === "camera" || arMode === "upload") && (
         <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-20 bg-black/75 backdrop-blur-md px-6 py-3 rounded-full border border-white/10 text-center pointer-events-none shadow-lg animate-fade-in">
           <p className="text-white text-[11px] font-light tracking-widest uppercase">
-            💡 Drag to position • Pinch to resize & rotate
+            💡 Drag to position • Scroll/Pinch to resize & rotate
           </p>
         </div>
       )}
@@ -140,12 +191,23 @@ export default function ModelViewerComponent({ glbUrl, usdzUrl, alt, onClose, is
       {cameraError && (
         <div className="absolute inset-0 bg-black/90 z-30 flex flex-col items-center justify-center p-8 text-center animate-fade-in">
           <p className="text-red-400 text-sm mb-4">{cameraError}</p>
-          <button
-            onClick={() => setCameraError(null)}
-            className="bg-white/10 border border-white/20 text-white px-6 py-2.5 rounded-full text-xs font-semibold hover:bg-white/20 transition-all"
-          >
-            Dismiss
-          </button>
+          <div className="flex gap-4">
+            <button
+              onClick={() => {
+                setCameraError(null);
+                fileInputRef.current?.click();
+              }}
+              className="bg-white text-black px-6 py-2.5 rounded-full text-xs font-semibold hover:bg-white/90 transition-all"
+            >
+              Upload Room Photo Instead
+            </button>
+            <button
+              onClick={() => setCameraError(null)}
+              className="bg-white/10 border border-white/20 text-white px-6 py-2.5 rounded-full text-xs font-semibold hover:bg-white/20 transition-all"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 
