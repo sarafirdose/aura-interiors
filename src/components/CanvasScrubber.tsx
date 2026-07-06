@@ -31,6 +31,8 @@ export default function CanvasScrubber() {
     if (!ctx) return;
     contextRef.current = ctx;
 
+    const isMobile = window.innerWidth < 768;
+
     const updateSize = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -41,7 +43,20 @@ export default function CanvasScrubber() {
     window.addEventListener("resize", updateSize);
     updateSize();
 
-    // Preload all frames eagerly
+    if (isMobile) {
+      // Mobile Optimization: Load only a single static frame to avoid memory exhaustion and GPU lag
+      const img = new Image();
+      img.src = getFramePath(0);
+      img.onload = () => {
+        imagesRef.current[0] = img;
+        renderFrame(0);
+      };
+      return () => {
+        window.removeEventListener("resize", updateSize);
+      };
+    }
+
+    // Preload all frames eagerly (Desktop Only)
     for (let i = 0; i < FRAME_COUNT; i++) {
       const img = new Image();
       img.src = getFramePath(i);
@@ -50,7 +65,7 @@ export default function CanvasScrubber() {
     }
 
     // RAF loop: every frame, lerp currentFrame → targetFrame at 12% speed
-    // This creates a smooth "rubber band" lag effect independent of scroll speed
+    // This creates a smooth "rubber band" lag effect independent of scroll speed (Desktop Only)
     const loop = () => {
       const prev = currentFrameRef.current;
       currentFrameRef.current = lerp(prev, targetFrameRef.current, 0.12);
@@ -89,6 +104,9 @@ export default function CanvasScrubber() {
   }
 
   useGSAP(() => {
+    const isMobile = window.innerWidth < 768;
+    if (isMobile) return; // Skip ScrollTrigger setup on mobile/tablet to save resources
+
     ScrollTrigger.create({
       trigger: "#main-scroll-container",
       start: "top top",

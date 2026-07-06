@@ -16,7 +16,9 @@ export default function Particles() {
 
   useEffect(() => {
     // Generate particles on client, but animate purely via CSS to save JS thread
-    const arr = Array.from({ length: 40 }).map((_, i) => ({
+    const isMobile = window.innerWidth < 768;
+    const count = isMobile ? 15 : 40;
+    const arr = Array.from({ length: count }).map((_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 100,
